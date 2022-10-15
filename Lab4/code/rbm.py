@@ -1,4 +1,5 @@
 from util import *
+from sklearn.model_selection import KFold
 
 
 class RestrictedBoltzmannMachine():
@@ -58,7 +59,7 @@ class RestrictedBoltzmannMachine():
 
         self.momentum = 0.7
 
-        self.print_period = 5000
+        self.print_period = 1000
 
         self.rf = {  # receptive-fields. Only applicable when visible layer is input data
             "period": 5000,  # iteration period to visualize
@@ -83,11 +84,21 @@ class RestrictedBoltzmannMachine():
 
         for it in range(n_iterations):
 
-            # [TODO TASK 4.1] run k=1 alternating Gibbs sampling : v_0 -> h_0 ->  v_1 -> h_1.
+            # [TODO TASK 4.1] run k=1 alternating Gibbs sampling : v_0 -> h_0 -> v_1 -> h_1.
             # you may need to use the inference functions 'get_h_given_v' and 'get_v_given_h'.
-            # note that inference methods returns both probabilities and activations (samples from probablities) and you may have to decide when to use what.
+            # note that inference methods returns both probabilities and activations (samples from probablities)
+            # and you may have to decide when to use what.
+
+            randomRows = np.random.randint(n_samples, size=self.batch_size)
+            minibatch = visible_trainset[randomRows, :]
+
+            p_v_h_0 = minibatch
+            p_h_v_0, h_0 = self.get_h_given_v(p_v_h_0)
+            p_v_h_1, v_1 = self.get_v_given_h(p_h_v_0)
+            p_h_v_1, h_1 = self.get_h_given_v(p_v_h_1)
 
             # [TODO TASK 4.1] update the parameters using function 'update_params'
+            self.update_params(p_v_h_0, h_0, p_v_h_1, p_h_v_1)
 
             # visualize once in a while when visible layer is input images
 
@@ -98,7 +109,7 @@ class RestrictedBoltzmannMachine():
             # print progress
 
             if it % self.print_period == 0:
-                print("iteration=%7d recon_loss=%4.4f" % (it, np.linalg.norm(visible_trainset - visible_trainset)))
+                print("iteration=%7d recon_loss=%4.4f" % (it, np.linalg.norm(p_v_h_0 - p_v_h_1)))
 
         return
 
@@ -117,14 +128,23 @@ class RestrictedBoltzmannMachine():
         """
 
         # [TODO TASK 4.1] get the gradients from the arguments (replace the 0s below) and update the weight and bias parameters
+        n_samples = v_0.shape[0]
+        n_dim_visible = v_0.shape[1]
+        n_dim_hidden = h_0.shape[1]
 
-        self.delta_bias_v += 0
-        self.delta_weight_vh += 0
-        self.delta_bias_h += 0
+        self.delta_bias_v = np.sum(v_0 - v_k, axis=0)
+        # (visible, hidden) = (visible, sample) @ (sample, hidden) - same
+        tmp = v_0.T @ h_0 - v_k.T @ h_k
+        self.delta_weight_vh = 1 / n_samples * tmp
+        self.delta_bias_h = np.sum(h_0 - h_k, axis=0)
 
-        self.bias_v += self.delta_bias_v
-        self.weight_vh += self.delta_weight_vh
-        self.bias_h += self.delta_bias_h
+        assert self.delta_bias_v.shape == (n_dim_visible,)
+        assert self.delta_weight_vh.shape == (n_dim_visible, n_dim_hidden)
+        assert self.delta_bias_h.shape == (n_dim_hidden,)
+
+        self.bias_v += self.learning_rate * self.delta_bias_v / n_samples
+        self.weight_vh += self.learning_rate * self.delta_weight_vh / n_samples
+        self.bias_h += self.learning_rate * self.delta_bias_h / n_samples
 
         return
 

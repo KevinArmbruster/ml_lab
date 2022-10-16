@@ -167,7 +167,7 @@ class RestrictedBoltzmannMachine():
 
         # [TODO TASK 4.1] compute probabilities and activations (samples from probabilities) of hidden layer (replace the zeros below)
         # (1, self.ndim_hidden) - (n_samples, ndim_visible) @ (ndim_visible, ndim_hidden)
-        support = self.bias_h - visible_minibatch @ self.weight_vh
+        support = self.bias_h + visible_minibatch @ self.weight_vh
         p_h_v = sigmoid(support)
 
         h = sample_binary(p_h_v)
@@ -211,7 +211,7 @@ class RestrictedBoltzmannMachine():
 
             # [TODO TASK 4.1] compute probabilities and activations (samples from probabilities) of visible layer (replace the pass and zeros below)
             # (1, self.ndim_visible) - (ndim_visible, ndim_hidden) @ (ndim_hidden, n_samples)
-            support = self.bias_v - hidden_minibatch @ self.weight_vh.T
+            support = self.bias_v + hidden_minibatch @ self.weight_vh.T
             p_v_h = sigmoid(support)
 
             v = sample_binary(p_v_h)

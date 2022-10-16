@@ -23,6 +23,11 @@ if __name__ == "__main__":
     epochs = 1
     rbm.cd1(visible_trainset=train_imgs, n_iterations=10000 * epochs)
 
+    # visualize images and their reconstruction
+    idx = list(range(5))
+    reconstructions = rbm.calc_reconstruction(train_imgs[idx])
+    vis_img_recon(train_imgs[idx], reconstructions)
+
     ''' deep- belief net '''
 
     print("\nStarting a Deep Belief Net..")

@@ -133,6 +133,22 @@ def weight_histogram(weights_vh, bias_h, bias_v, it):
     plt.close('all')
 
 
+def vis_img_recon(image, reconstruction, image_size=(28, 28)):
+    for i in range(len(image)):
+        f, a = plt.subplots(1, 2)
+        a = a.ravel()
+
+        a[0].imshow(image[i].reshape(image_size))
+        a[0].set_title(f"Image {i}")
+
+        a[1].imshow(reconstruction[i].reshape(image_size))
+        a[1].set_title(f"Reconstruction {i}")
+
+        plt.tight_layout()
+        plt.savefig("img_vs_recon%02d.png" % i)
+        plt.close('all')
+
+
 def stitch_video(fig, imgs):
     """
     Stitches a list of images and returns a animation object

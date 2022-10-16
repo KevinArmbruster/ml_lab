@@ -122,14 +122,18 @@ class RestrictedBoltzmannMachine():
 
         return
 
-    def calc_reconstruction_error(self, data):
-        n_samples = data.shape[0]
-
+    def calc_reconstruction(self, data):
         ### basically same as cd1, just shortened
         p_h_v_0, h_0 = self.get_h_given_v(data)
         p_v_h_1, v_1 = self.get_v_given_h(h_0)
+        return p_v_h_1
 
-        error = np.linalg.norm(data - p_v_h_1)
+    def calc_reconstruction_error(self, data):
+        n_samples = data.shape[0]
+
+        recon = self.calc_reconstruction(data)
+
+        error = np.linalg.norm(data - recon)
         return error / n_samples
 
     def update_params(self, v_0, h_0, v_k, h_k):

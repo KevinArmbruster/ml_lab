@@ -116,6 +116,23 @@ def viz_rf(weights, it, grid):
     plt.close('all')
 
 
+def weight_histogram(weights_vh, bias_h, bias_v, it):
+    data = [weights_vh.ravel(), bias_h, bias_v]
+    titles = ["Weights VH", "Bias H", "Bias V"]
+
+    f, a = plt.subplots(3, 1)
+    a = a.ravel()
+    for idx, ax in enumerate(a):
+        ax.hist(data[idx], bins=20, density=True)
+        ax.set_title(titles[idx])
+        ax.set_xlabel('Data')
+        ax.set_ylabel('Probability')
+
+    plt.tight_layout()
+    plt.savefig("hist.iter%06d.png" % it)
+    plt.close('all')
+
+
 def stitch_video(fig, imgs):
     """
     Stitches a list of images and returns a animation object

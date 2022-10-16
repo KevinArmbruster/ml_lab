@@ -59,13 +59,17 @@ class RestrictedBoltzmannMachine():
 
         self.momentum = 0.7
 
-        self.print_period = 1000
+        self.weight_cost = 0.0001
+
+        self.print_period = 5000
 
         self.rf = {  # receptive-fields. Only applicable when visible layer is input data
             "period": 5000,  # iteration period to visualize
             "grid": [5, 5],  # size of the grid
             "ids": np.random.randint(0, self.ndim_hidden, 25)  # pick some random hidden units
         }
+
+        self.weight_histogram_period = 5000
 
         return
 
@@ -82,36 +86,51 @@ class RestrictedBoltzmannMachine():
 
         n_samples = visible_trainset.shape[0]
 
-        for it in range(n_iterations):
+        for it in range(n_iterations + 1):  # +1 for printing with %-operations
 
             # [TODO TASK 4.1] run k=1 alternating Gibbs sampling : v_0 -> h_0 -> v_1 -> h_1.
             # you may need to use the inference functions 'get_h_given_v' and 'get_v_given_h'.
             # note that inference methods returns both probabilities and activations (samples from probablities)
             # and you may have to decide when to use what.
 
-            randomRows = np.random.randint(n_samples, size=self.batch_size)
-            minibatch = visible_trainset[randomRows, :]
+            ### Random sampling of minibatch
+            random_rows = np.random.randint(n_samples, size=self.batch_size)
+            minibatch = visible_trainset[random_rows, :]
 
+            ### Gibbs sampling
             p_v_h_0 = minibatch
             p_h_v_0, h_0 = self.get_h_given_v(p_v_h_0)
-            p_v_h_1, v_1 = self.get_v_given_h(p_h_v_0)
+            p_v_h_1, v_1 = self.get_v_given_h(h_0)
             p_h_v_1, h_1 = self.get_h_given_v(p_v_h_1)
 
             # [TODO TASK 4.1] update the parameters using function 'update_params'
             self.update_params(p_v_h_0, h_0, p_v_h_1, p_h_v_1)
 
+            ### Visualizations
             # visualize once in a while when visible layer is input images
-
             if it % self.rf["period"] == 0 and self.is_bottom:
                 viz_rf(weights=self.weight_vh[:, self.rf["ids"]].reshape((self.image_size[0], self.image_size[1], -1)),
                        it=it, grid=self.rf["grid"])
 
-            # print progress
+            # visualize weights as histogram
+            if it % self.rf["period"] == 0:
+                weight_histogram(weights_vh=self.weight_vh, bias_h=self.bias_h, bias_v=self.bias_v, it=it)
 
+            # print progress
             if it % self.print_period == 0:
-                print("iteration=%7d recon_loss=%4.4f" % (it, np.linalg.norm(p_v_h_0 - p_v_h_1)))
+                print("iteration=%7d recon_loss=%4.4f" % (it, self.calc_reconstruction_error(visible_trainset)))
 
         return
+
+    def calc_reconstruction_error(self, data):
+        n_samples = data.shape[0]
+
+        ### basically same as cd1, just shortened
+        p_h_v_0, h_0 = self.get_h_given_v(data)
+        p_v_h_1, v_1 = self.get_v_given_h(h_0)
+
+        error = np.linalg.norm(data - p_v_h_1)
+        return error / n_samples
 
     def update_params(self, v_0, h_0, v_k, h_k):
 
@@ -132,16 +151,26 @@ class RestrictedBoltzmannMachine():
         n_dim_visible = v_0.shape[1]
         n_dim_hidden = h_0.shape[1]
 
-        self.delta_bias_v = np.sum(v_0 - v_k, axis=0)
+        ### regularization - use only 1 form!
+        # (visible, hidden)
+        l2_weight_decay = 2 * self.weight_cost * self.weight_vh
+        # l1_lasso        = 2 * self.weight_cost * np.sign(self.weight_vh)
+
+        ### calculate gradient
         # (visible, hidden) = (visible, sample) @ (sample, hidden) - same
-        tmp = v_0.T @ h_0 - v_k.T @ h_k
-        self.delta_weight_vh = 1 / n_samples * tmp
-        self.delta_bias_h = np.sum(h_0 - h_k, axis=0)
+        gradient_tmp = v_0.T @ h_0 - v_k.T @ h_k
+        weight_vh_gradient = (1 / n_samples * gradient_tmp) + l2_weight_decay
+
+        ### calculate weight update with momentum
+        self.delta_bias_v    = self.momentum * self.delta_bias_v    + (1 - self.momentum) * np.sum(v_0 - v_k, axis=0)
+        self.delta_weight_vh = self.momentum * self.delta_weight_vh + (1 - self.momentum) * weight_vh_gradient
+        self.delta_bias_h    = self.momentum * self.delta_bias_h    + (1 - self.momentum) * np.sum(h_0 - h_k, axis=0)
 
         assert self.delta_bias_v.shape == (n_dim_visible,)
         assert self.delta_weight_vh.shape == (n_dim_visible, n_dim_hidden)
         assert self.delta_bias_h.shape == (n_dim_hidden,)
 
+        ### update weights, use learning rate and normalize by sample size
         self.bias_v += self.learning_rate * self.delta_bias_v / n_samples
         self.weight_vh += self.learning_rate * self.delta_weight_vh / n_samples
         self.bias_h += self.learning_rate * self.delta_bias_h / n_samples

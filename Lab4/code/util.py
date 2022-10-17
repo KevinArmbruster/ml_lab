@@ -116,6 +116,22 @@ def viz_rf(weights, it, grid):
     plt.close('all')
 
 
+def viz_rf_p(weights, it, grid):
+    """
+    Visualize receptive fields and save 
+    """
+    fig, axs = plt.subplots(grid[0], grid[1], figsize=(grid[1], grid[0]))  # ,constrained_layout=True)
+    plt.subplots_adjust(left=0, bottom=0, right=1, top=1, wspace=0, hspace=0)
+    imax = abs(weights).max()
+    for x in range(grid[0]):
+        for y in range(grid[1]):
+            axs[x, y].set_xticks([])
+            axs[x, y].set_yticks([])
+            axs[x, y].imshow(weights[:, :, y + grid[1] * x], cmap="bwr", vmin=-imax, vmax=imax, interpolation=None)
+    plt.savefig("rf.iterp%06d.png" % it)
+    plt.close('all')
+
+
 def weight_histogram(weights_vh, bias_h, bias_v, it):
     data = [weights_vh.ravel(), bias_h, bias_v]
     titles = ["Weights VH", "Bias H", "Bias V"]

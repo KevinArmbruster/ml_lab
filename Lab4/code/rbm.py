@@ -122,7 +122,58 @@ class RestrictedBoltzmannMachine():
 
         return
 
-    def calc_reconstruction(self, data):
+    def cd1_p(self, visible_trainset, n_iterations=10000):
+        
+        """Contrastive Divergence with k=1 full alternating Gibbs sampling
+
+        Args:
+          visible_trainset: training data for this rbm, shape is (size of training set, size of visible layer)
+          n_iterations: number of iterations of learning (each iteration learns a mini-batch)
+        """
+
+        print("learning CD1")
+
+        n_samples = visible_trainset.shape[0]
+
+        for it in range(n_iterations + 1):  # +1 for printing with %-operations
+
+            # [TODO TASK 4.1] run k=1 alternating Gibbs sampling : v_0 -> h_0 -> v_1 -> h_1.
+            # you may need to use the inference functions 'get_h_given_v' and 'get_v_given_h'.
+            # note that inference methods returns both probabilities and activations (samples from probablities)
+            # and you may have to decide when to use what.
+
+            ### Random sampling of minibatch
+            random_rows = np.random.randint(n_samples, size=self.batch_size)
+            minibatch = visible_trainset[random_rows, :]
+
+            ### Gibbs sampling
+            p_v_h_0 = minibatch
+            p_h_v_0, h_0 = self.get_h_given_v(p_v_h_0)
+            p_v_h_1, v_1 = self.get_v_given_h(h_0)
+            p_h_v_1, h_1 = self.get_h_given_v(p_v_h_1)
+
+            # [TODO TASK 4.1] update the parameters using function 'update_params'
+            self.update_params(p_v_h_0, h_0, p_v_h_1, p_h_v_1)
+
+            ### Visualizations
+            # visualize once in a while when visible layer is input images
+            if it % self.rf["period"] == 0 and self.is_bottom:
+                viz_rf_p(weights=self.weight_vh[:, self.rf["ids"]].reshape((self.image_size[0], self.image_size[1], -1)),
+                       it=it, grid=self.rf["grid"])
+
+            # visualize weights as histogram
+            if it % self.rf["period"] == 0:
+                weight_histogram(weights_vh=self.weight_vh, bias_h=self.bias_h, bias_v=self.bias_v, it=it)
+
+            # print progress
+            if it % self.print_period == 0:
+                print("iteration=%7d recon_loss=%4.4f" % (it, self.calc_reconstruction_error(visible_trainset)))
+
+        return
+
+    def calc_reconstruction_error(self, data):
+        n_samples = data.shape[0]
+
         ### basically same as cd1, just shortened
         p_h_v_0, h_0 = self.get_h_given_v(data)
         p_v_h_1, v_1 = self.get_v_given_h(h_0)
@@ -238,7 +289,12 @@ class RestrictedBoltzmannMachine():
             # [TODO TASK 4.1] compute probabilities and activations (samples from probabilities) of visible layer (replace the pass below). \
             # Note that this section can also be postponed until TASK 4.2, since in this task, stand-alone RBMs do not contain labels in visible layer.
 
-            pass
+            support = self.bias_v + hidden_minibatch @ self.weight_vh.T
+            label_cache = support[:, -self.n_labels:]            
+            p_v_h = sigmoid(support)
+
+            v = sample_binary(p_v_h)
+            v = np.concatenate((v[:, :-self.n_labels], label_cache), axis = 1)
 
         else:
 
@@ -259,7 +315,6 @@ class RestrictedBoltzmannMachine():
 
         self.weight_v_to_h = np.copy(self.weight_vh)
         self.weight_h_to_v = np.copy(np.transpose(self.weight_vh))
-        self.weight_vh = None
 
     def get_h_given_v_dir(self, visible_minibatch):
 

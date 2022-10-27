@@ -171,7 +171,7 @@ class RestrictedBoltzmannMachine():
 
         return
 
-    def calc_reconstruction_error(self, data):
+    def calc_reconstruction(self, data):
         n_samples = data.shape[0]
 
         ### basically same as cd1, just shortened
@@ -334,8 +334,15 @@ class RestrictedBoltzmannMachine():
         n_samples = visible_minibatch.shape[0]
 
         # [TODO TASK 4.2] perform same computation as the function 'get_h_given_v' but with directed connections (replace the zeros below) 
+        support = self.bias_h + visible_minibatch @ self.weight_v_to_h
+        p_h_v = sigmoid(support)
 
-        return np.zeros((n_samples, self.ndim_hidden)), np.zeros((n_samples, self.ndim_hidden))
+        h = sample_binary(p_h_v)
+
+        assert p_h_v.shape == (n_samples, self.ndim_hidden)
+        assert h.shape == (n_samples, self.ndim_hidden)
+        return p_h_v, h
+        #return np.zeros((n_samples, self.ndim_hidden)), np.zeros((n_samples, self.ndim_hidden))
 
     def get_v_given_h_dir(self, hidden_minibatch):
 
@@ -367,15 +374,22 @@ class RestrictedBoltzmannMachine():
             # this case should never be executed : when the RBM is a part of a DBN and is at the top, it will have not have directed connections.
             # Appropriate code here is to raise an error (replace pass below)
 
-            pass
+            raise Exception("It seems to be an error here") 
 
         else:
+    
+            # [TODO TASK 4.1] compute probabilities and activations (samples from probabilities) of visible layer (replace the pass and zeros below)
+            # (1, self.ndim_visible) - (ndim_visible, ndim_hidden) @ (ndim_hidden, n_samples)
+            support = self.bias_v + hidden_minibatch @ self.weight_h_to_v.T
+            p_v_h = sigmoid(support)
 
-            # [TODO TASK 4.2] performs same computaton as the function 'get_v_given_h' but with directed connections (replace the pass and zeros below)             
+            v = sample_binary(p_v_h)
 
-            pass
+        assert p_v_h.shape == (n_samples, self.ndim_visible)
+        assert v.shape == (n_samples, self.ndim_visible)
+        return p_v_h, v
 
-        return np.zeros((n_samples, self.ndim_visible)), np.zeros((n_samples, self.ndim_visible))
+        #return np.zeros((n_samples, self.ndim_visible)), np.zeros((n_samples, self.ndim_visible))
 
     def update_generate_params(self, inps, trgs, preds):
 

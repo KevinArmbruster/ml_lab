@@ -74,8 +74,8 @@ class DeepBeliefNet():
         # NOTE : inferring entire train/test set may require too much compute memory (depends on your system). In that case, divide into mini-batches.
 
 
-        h1 = self.rbm_stack["vis--hid"].get_h_given_v(vis)[1]
-        h2 = self.rbm_stack["hid--pen"].get_h_given_v(h1)[1]
+        h1 = self.rbm_stack["vis--hid"].get_h_given_v_dir(vis)[1]
+        h2 = self.rbm_stack["hid--pen"].get_h_given_v_dir(h1)[1]
         h2 = np.concatenate((h2, lbl), axis = 1)
         h3_h = self.rbm_stack["pen+lbl--top"].get_h_given_v(h2)[1]
 
@@ -83,8 +83,10 @@ class DeepBeliefNet():
             h3_v = self.rbm_stack["pen+lbl--top"].get_v_given_h(h3_h)[1]
             h3_h = self.rbm_stack["pen+lbl--top"].get_h_given_v(h3_v)[1]
 
+        h3_h = h3_h[:,:10]
         predicted_lbl = h3_h
-
+        print("size h : ", h3_h.shape)
+        print("size lbl : ", true_lbl.shape)
         print("accuracy = %.2f%%" % (100. * np.mean(np.argmax(predicted_lbl, axis=1) == np.argmax(true_lbl, axis=1))))
 
         return

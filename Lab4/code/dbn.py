@@ -83,8 +83,8 @@ class DeepBeliefNet():
             h3_v = self.rbm_stack["pen+lbl--top"].get_v_given_h(h3_h)[1]
             h3_h = self.rbm_stack["pen+lbl--top"].get_h_given_v(h3_v)[1]
 
-        h3_h = h3_h[:,:10]
-        predicted_lbl = h3_h
+        h3_v = h3_v[:,-10:]
+        predicted_lbl = h3_v
         print("size h : ", h3_h.shape)
         print("size lbl : ", true_lbl.shape)
         print("accuracy = %.2f%%" % (100. * np.mean(np.argmax(predicted_lbl, axis=1) == np.argmax(true_lbl, axis=1))))
@@ -138,13 +138,14 @@ class DeepBeliefNet():
 
         try:
 
-              self.loadfromfile_rbm(loc="trained_rbm", name="vis--hid")
-              self.rbm_stack["vis--hid"].untwine_weights()
+                self.loadfromfile_rbm(loc="trained_rbm", name="vis--hid")
+                self.rbm_stack["vis--hid"].untwine_weights()
 
-              self.loadfromfile_rbm(loc="trained_rbm", name="hid--pen")
-              self.rbm_stack["hid--pen"].untwine_weights()
+                self.loadfromfile_rbm(loc="trained_rbm", name="hid--pen")
+                self.rbm_stack["hid--pen"].untwine_weights()
 
-              self.loadfromfile_rbm(loc="trained_rbm", name="pen+lbl--top")
+                self.loadfromfile_rbm(loc="trained_rbm", name="pen+lbl--top")
+                self.rbm_stack["pen+lbl--top"].untwine_weights()
 
         except IOError:
 
@@ -174,7 +175,7 @@ class DeepBeliefNet():
             """
             self.rbm_stack["hid--pen"].untwine_weights()
             pen_and_lbl = np.concatenate((h_n, lbl_trainset), axis = 1)      
-            self.rbm_stack["pen+lbl--top"].cd1_p(pen_and_lbl, n_iterations)
+            self.rbm_stack["pen+lbl--top"].cd1(pen_and_lbl, n_iterations)
             self.savetofile_rbm(loc="trained_rbm", name="pen+lbl--top")
 
         return

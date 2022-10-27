@@ -290,14 +290,15 @@ class RestrictedBoltzmannMachine():
             # [TODO TASK 4.1] compute probabilities and activations (samples from probabilities) of visible layer (replace the pass below). \
             # Note that this section can also be postponed until TASK 4.2, since in this task, stand-alone RBMs do not contain labels in visible layer.
 
-            support = self.bias_v + hidden_minibatch @ self.weight_vh.T       
-            
-            p_v_h = sigmoid(support)  
-            labels = p_v_h[:, -self.n_labels:]  
-            labels = softmax(labels)
+            support = self.bias_v + hidden_minibatch @ self.weight_vh.T
+
+            labels = softmax(support[:, -self.n_labels:])         
+            support = sigmoid(support[:,:-self.n_labels])
+
+            p_v_h = np.concatenate((support, labels), axis = 1)  
 
             v = sample_binary(p_v_h[:, :-self.n_labels])
-            labels = sample_categorical(labels)
+            # labels = sample_categorical(labels)
 
             v = np.concatenate((v, labels), axis = 1)
 

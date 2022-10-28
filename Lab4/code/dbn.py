@@ -83,6 +83,7 @@ class DeepBeliefNet():
             h3_v = self.rbm_stack["pen+lbl--top"].get_v_given_h(h3_h)[1]
             h3_h = self.rbm_stack["pen+lbl--top"].get_h_given_v(h3_v)[1]
 
+        h3_v = self.rbm_stack["pen+lbl--top"].get_v_given_h(h3_h)[1]
         h3_v = h3_v[:,-10:]
         predicted_lbl = h3_v
         print("size h : ", h3_h.shape)
@@ -114,7 +115,18 @@ class DeepBeliefNet():
         # top to the bottom visible layer (replace 'vis' from random to your generated visible layer).
 
         for _ in range(self.n_gibbs_gener):
-            vis = np.random.rand(n_sample, self.sizes["vis"])
+            #vis = np.random.rand(n_sample, self.sizes["vis"])
+            #h2 = np.concatenate(((np.ones(self.sizes["pen"]), lbl)), axis = 1)
+
+            self.rbm_stack["pen+lbl--top"].weight_v_to_h[:,-10:] = lbl
+
+            for _ in range(0,200):
+                h3_v = self.rbm_stack["pen+lbl--top"].get_v_given_h(self.rbm_stack["pen+lbl--top"].weight_v_to_h)[0]
+                h3_h = self.rbm_stack["pen+lbl--top"].get_h_given_v(h3_v)[1]
+
+            h3_v = self.rbm_stack["pen+lbl--top"].get_v_given_h(h3_h)[0][:,:-10]
+            h2 = self.rbm_stack["hid--pen"].get_v_given_h_dir(h3_v)[0]
+            vis = self.rbm_stack["vis--hid"].get_v_given_h_dir(h2)[1]
 
             records.append([ax.imshow(vis.reshape(self.image_size), cmap="bwr", vmin=0, vmax=1, animated=True,
                                       interpolation=None)])
@@ -138,14 +150,14 @@ class DeepBeliefNet():
 
         try:
 
-                self.loadfromfile_rbm(loc="trained_rbm", name="vis--hid")
-                self.rbm_stack["vis--hid"].untwine_weights()
+                 self.loadfromfile_rbm(loc="trained_rbm", name="vis--hid")
+                 self.rbm_stack["vis--hid"].untwine_weights()
 
-                self.loadfromfile_rbm(loc="trained_rbm", name="hid--pen")
-                self.rbm_stack["hid--pen"].untwine_weights()
+                 self.loadfromfile_rbm(loc="trained_rbm", name="hid--pen")
+                 self.rbm_stack["hid--pen"].untwine_weights()
 
-                self.loadfromfile_rbm(loc="trained_rbm", name="pen+lbl--top")
-                self.rbm_stack["pen+lbl--top"].untwine_weights()
+                 self.loadfromfile_rbm(loc="trained_rbm", name="pen+lbl--top")
+                 self.rbm_stack["pen+lbl--top"].untwine_weights()
 
         except IOError:
 

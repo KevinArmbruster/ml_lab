@@ -102,7 +102,7 @@ class RestrictedBoltzmannMachine():
             p_v_h_0 = minibatch
             p_h_v_0, h_0 = self.get_h_given_v(p_v_h_0)
             p_v_h_1, v_1 = self.get_v_given_h(h_0)
-            p_h_v_1, h_1 = self.get_h_given_v(p_v_h_1)
+            p_h_v_1, h_1 = self.get_h_given_v(v_1)
 
             # [TODO TASK 4.1] update the parameters using function 'update_params'
             self.update_params(p_v_h_0, h_0, p_v_h_1, p_h_v_1)
@@ -151,10 +151,10 @@ class RestrictedBoltzmannMachine():
             p_v_h_0 = minibatch
             p_h_v_0, h_0 = self.get_h_given_v(p_v_h_0)
             p_v_h_1, v_1 = self.get_v_given_h(h_0)
-            p_h_v_1, h_1 = self.get_h_given_v(p_v_h_1)
+            p_h_v_1, h_1 = self.get_h_given_v(v_1)
 
             # [TODO TASK 4.1] update the parameters using function 'update_params'
-            self.update_params(p_v_h_0, h_0, p_v_h_1, p_h_v_1)
+            self.update_params(p_v_h_0, h_0, p_v_h_1, h_1)
 
             ### Visualizations
             # visualize once in a while when visible layer is input images
@@ -386,7 +386,7 @@ class RestrictedBoltzmannMachine():
     
             # [TODO TASK 4.1] compute probabilities and activations (samples from probabilities) of visible layer (replace the pass and zeros below)
             # (1, self.ndim_visible) - (ndim_visible, ndim_hidden) @ (ndim_hidden, n_samples)
-            support = self.bias_v + hidden_minibatch @ self.weight_h_to_v.T
+            support = self.bias_v + hidden_minibatch @ self.weight_h_to_v
             p_v_h = sigmoid(support)
 
             v = sample_binary(p_v_h)

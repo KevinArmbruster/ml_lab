@@ -101,6 +101,7 @@ class DeepBeliefNet():
         """
 
         n_sample = true_lbl.shape[0]
+        n_classes = true_lbl.shape[1]
 
         records = []
         fig, ax = plt.subplots(1, 1, figsize=(3, 3))
@@ -118,6 +119,7 @@ class DeepBeliefNet():
             # vis = np.random.rand(n_sample, self.sizes["vis"])
             # h2 = np.concatenate(((np.ones(self.sizes["pen"]), lbl)), axis = 1)
 
+            pen_lbl = np.concatenate((pen_lbl[:, :-n_classes], lbl), axis=1)  # clamp labels all time
             # 0=proba, 1=binary
             top = self.rbm_stack["pen+lbl--top"].get_h_given_v(pen_lbl)[1]  # should be binary / is bottleneck
             pen_lbl = self.rbm_stack["pen+lbl--top"].get_v_given_h(top)[0]  # probabilistic
